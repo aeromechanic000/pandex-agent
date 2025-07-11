@@ -1,2 +1,0 @@
-# pandex-agent
-Pandex agent.
