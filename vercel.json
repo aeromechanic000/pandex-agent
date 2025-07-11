@@ -1,8 +1,6 @@
 {
   "functions": {
-    "app.py": {
-      "runtime": "python3.12"
-    }
+    "app.py": {}
   },
   "routes": [
     {
