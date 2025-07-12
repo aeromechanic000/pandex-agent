@@ -1942,22 +1942,9 @@ Create an agent that performs the described task. Use meaningful variable names 
         /* Left Sidebar - Agents */
         , _react2.default.createElement('div', { className: "w-80 bg-white border-r border-gray-200 flex flex-col"     ,}
           , _react2.default.createElement('div', { className: "p-4 border-b border-gray-200"  ,}
-            , _react2.default.createElement('div', { className: "flex items-center justify-between mb-3"   ,}
-              , _react2.default.createElement('div', { className: "flex items-center space-x-2"  ,}
-                , _react2.default.createElement(_lucidereact.Users, { className: "w-5 h-5 text-blue-600"  ,} )
-                , _react2.default.createElement('h2', { className: "text-lg font-semibold text-gray-900"  ,}, "Agents")
-              )
-              , _react2.default.createElement('button', {
-                onClick: addAgent,
-                className: "p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"     ,}
-
-                , _react2.default.createElement(_lucidereact.Plus, { className: "w-4 h-4" ,} )
-              )
-            )
-
+            
             /* Example Selector */
             , _react2.default.createElement('div', { className: "mb-3",}
-              , _react2.default.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-2"    ,}, "Example Hubs")
               , _react2.default.createElement('div', { className: "relative",}
                 , _react2.default.createElement('select', {
                   value: selectedExample,
@@ -1985,7 +1972,19 @@ Create an agent that performs the described task. Use meaningful variable names 
                 )
               )
             )
+            
+            , _react2.default.createElement('div', { className: "flex items-center justify-between mb-3"   ,}
+              , _react2.default.createElement('div', { className: "flex items-center space-x-2"  ,}
+                , _react2.default.createElement(_lucidereact.Users, { className: "w-5 h-5 text-blue-600"  ,} )
+                , _react2.default.createElement('h2', { className: "text-lg font-semibold text-gray-900"  ,}, "Agents")
+              )
+              , _react2.default.createElement('button', {
+                onClick: addAgent,
+                className: "p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"     ,}
 
+                , _react2.default.createElement(_lucidereact.Plus, { className: "w-4 h-4" ,} )
+              )
+            )
             /* Search */
             , _react2.default.createElement('div', { className: "relative",}
               , _react2.default.createElement(_lucidereact.Search, { className: "w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"       ,} )
@@ -2130,6 +2129,27 @@ Create an agent that performs the described task. Use meaningful variable names 
                     , currentAgent.template || 'No template defined'
                   )
                 )
+                
+                /* Executor Section */
+                , _react2.default.createElement('div', { className: "bg-white rounded-lg shadow-sm border border-gray-200 p-6"     ,}
+                  , _react2.default.createElement('div', { 
+                    className: "flex items-center space-x-2 mb-4 cursor-pointer hover:text-blue-600 transition-colors"      ,
+                    onClick: () => handleFieldClick('executor', currentAgent.executor),}
+
+                    , getFieldIcon('executor')
+                    , _react2.default.createElement('h3', { className: "text-lg font-semibold text-gray-900"  ,}, "Executor")
+                  )
+                  , _react2.default.createElement('div', { className: "space-y-2",}
+                    , _react2.default.createElement('div', { className: "flex items-center space-x-2"  ,}
+                      , _react2.default.createElement('span', { className: "text-sm font-medium text-gray-500"  ,}, "Type:")
+                      , _react2.default.createElement('span', { className: "text-sm text-gray-900" ,}, _optionalChain([currentAgent, 'access', _11 => _11.executor, 'optionalAccess', _12 => _12.type]) || 'Not configured')
+                    )
+                    , _react2.default.createElement('div', { className: "flex items-center space-x-2"  ,}
+                      , _react2.default.createElement('span', { className: "text-sm font-medium text-gray-500"  ,}, "URL:")
+                      , _react2.default.createElement('span', { className: "text-sm text-gray-900" ,}, _optionalChain([currentAgent, 'access', _13 => _13.executor, 'optionalAccess', _14 => _14.url]) || 'Not configured')
+                    )
+                  )
+                )
 
                 /* Output Section */
                 , _react2.default.createElement('div', { className: "bg-white rounded-lg shadow-sm border border-gray-200 p-6"     ,}
@@ -2138,7 +2158,7 @@ Create an agent that performs the described task. Use meaningful variable names 
                     onClick: () => handleFieldClick('output', currentAgent.output),}
 
                     , getFieldIcon('output')
-                    , _react2.default.createElement('h3', { className: "text-lg font-semibold text-gray-900"  ,}, "Output Configuration")
+                    , _react2.default.createElement('h3', { className: "text-lg font-semibold text-gray-900"  ,}, "Output")
                   )
                   , _react2.default.createElement('div', { className: "space-y-3",}
                     , _react2.default.createElement('div', { className: "flex items-center space-x-2"  ,}
@@ -2176,27 +2196,6 @@ Create an agent that performs the described task. Use meaningful variable names 
                           _react2.default.createElement('span', { className: "text-gray-500 text-sm"  ,}, "No output keys defined")
                         )
                       )
-                    )
-                  )
-                )
-
-                /* Executor Section */
-                , _react2.default.createElement('div', { className: "bg-white rounded-lg shadow-sm border border-gray-200 p-6"     ,}
-                  , _react2.default.createElement('div', { 
-                    className: "flex items-center space-x-2 mb-4 cursor-pointer hover:text-blue-600 transition-colors"      ,
-                    onClick: () => handleFieldClick('executor', currentAgent.executor),}
-
-                    , getFieldIcon('executor')
-                    , _react2.default.createElement('h3', { className: "text-lg font-semibold text-gray-900"  ,}, "Executor")
-                  )
-                  , _react2.default.createElement('div', { className: "space-y-2",}
-                    , _react2.default.createElement('div', { className: "flex items-center space-x-2"  ,}
-                      , _react2.default.createElement('span', { className: "text-sm font-medium text-gray-500"  ,}, "Type:")
-                      , _react2.default.createElement('span', { className: "text-sm text-gray-900" ,}, _optionalChain([currentAgent, 'access', _11 => _11.executor, 'optionalAccess', _12 => _12.type]) || 'Not configured')
-                    )
-                    , _react2.default.createElement('div', { className: "flex items-center space-x-2"  ,}
-                      , _react2.default.createElement('span', { className: "text-sm font-medium text-gray-500"  ,}, "URL:")
-                      , _react2.default.createElement('span', { className: "text-sm text-gray-900" ,}, _optionalChain([currentAgent, 'access', _13 => _13.executor, 'optionalAccess', _14 => _14.url]) || 'Not configured')
                     )
                   )
                 )
