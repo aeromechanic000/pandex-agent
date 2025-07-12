@@ -11,6 +11,11 @@ CORS(app)
 current_hub = None
 
 @app.route('/')
+def index():
+    """Serve the playground frontend"""
+    return render_template('playground.html')
+
+@app.route('/playground')
 def playground():
     """Serve the playground frontend"""
     return render_template('playground.html')
