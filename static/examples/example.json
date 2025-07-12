@@ -1,0 +1,19 @@
+{
+    "agents" : {
+        "simple" : {
+            "template": "[[PROMPT]]",
+            "executor": {
+                "type": "api",
+                "url": "https://text.pollinations.ai/openai",
+                "headers": {"Content-Type" : "application/json"},
+                "data": {"model": "deepseek", "prompt": "Hello world."}
+            },
+            "vars": {
+                "prompt": {
+                    "type": "text",
+                    "default": "Hello world."
+                }
+            }
+        }
+    }
+}
