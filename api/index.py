@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-import sys, json, traceback
+import os, sys, json, traceback
 
-from .agent import PandexHub, PandexAgent
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from agent import PandexHub, PandexAgent
 
 app = Flask(__name__)
 CORS(app)

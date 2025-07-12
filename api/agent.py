@@ -1,6 +1,9 @@
 
-import re
-from .executor import * 
+import re, os, sys
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from executor import * 
 
 def split_content_and_json(text) :
     content, data = text, {}
@@ -160,26 +163,26 @@ The result should be formatted in **JSON** dictionary and enclosed in **triple b
             print(f"Agent {self.name} is executed.")
             self.update(plan)
             self.replace()
+            self.result = self.executor.process(self.plan)
             output_type = self.config.get("output", {}).get("type", "raw") 
-            if output_type == "json" : 
-                result = self.executor.process(self.plan)
-                content, data = split_content_and_json(str(result.get("output", "")))
-                for key in self.config.get("output", {}).get("keys", {}).keys() :
+            output_keys = self.config.get("output", {}).get("keys", {}) 
+            if output_type == "json" and len(output_keys) > 0: 
+                content, data = split_content_and_json(str(self.result.get("output", "")))
+                self.result["output"], self.result["keys"] = content, {} 
+                for key in output_keys.keys() :
                     if key in data.keys() :
-                        if self.config["output"]["keys"][key]["type"] == "int" :
-                            self.result["output"] = int(data[key])
+                        if output_keys[key]["type"] == "int" :
+                            self.result["keys"][key] = int(data[key])
                         elif self.config["output"]["keys"][key]["type"] == "float" :
-                            self.result["output"] = float(data[key])
+                            self.result["keys"][key] = float(data[key])
                         elif self.config["output"]["keys"][key]["type"] == "bool" :
-                            self.result["output"] = bool(data[key])
+                            self.result["keys"][key] = bool(data[key])
                         elif self.config["output"]["keys"][key]["type"] == "string" :
-                            self.result["output"] = str(data[key])
+                            self.result["keys"][key] = str(data[key])
                         else :
-                            self.result["output"] = data[key]
+                            self.result["keys"][key] = data[key]
                     else :
                         self.result[key] = None
-            else :
-                self.result = self.executor.process(self.plan)
         else :
             print(f"Agent {self.name} cannot be executed without executor")
         return self.result
