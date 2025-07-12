@@ -1,6 +1,6 @@
 
 import re
-from executor import * 
+from .executor import * 
 
 def split_content_and_json(text) :
     content, data = text, {}
