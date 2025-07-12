@@ -7,7 +7,7 @@
 var _lucidereact = require('lucide-react');
 
 const PandexAgentEditor = () => {
-  // Default example hub
+  // Default example hub with new output structure
   const defaultHub = {
     agents: {
       "simple": {
@@ -18,7 +18,19 @@ const PandexAgentEditor = () => {
           "headers": {"Content-Type": "application/json"},
           "data": {"model": "deepseek", "prompt": "Hello world."}
         },
-        "keys": ["output", "status"],
+        "output": {
+          "type": "json",
+          "keys": {
+            "content": {
+              "type": "string",
+              "description": "content"
+            },
+            "status": {
+              "type": "int",
+              "description": "status"
+            }
+          }
+        },
         "vars": {
           "prompt": {
             "type": "text",
@@ -52,6 +64,11 @@ const PandexAgentEditor = () => {
   const [showVariableModal, setShowVariableModal] = _react.useState.call(void 0, false);
   const [variableModalType, setVariableModalType] = _react.useState.call(void 0, 'add'); // 'add' or 'edit'
   const [editingVariable, setEditingVariable] = _react.useState.call(void 0, null);
+
+  // Output key modal states
+  const [showOutputKeyModal, setShowOutputKeyModal] = _react.useState.call(void 0, false);
+  const [outputKeyModalType, setOutputKeyModalType] = _react.useState.call(void 0, 'add'); // 'add' or 'edit'
+  const [editingOutputKey, setEditingOutputKey] = _react.useState.call(void 0, null);
 
   // Execution status tracking
   const [executionStatus, setExecutionStatus] = _react.useState.call(void 0, null);
@@ -183,7 +200,19 @@ const PandexAgentEditor = () => {
         headers: { "Content-Type": "application/json" },
         data: { purpose: userPrompt }
       },
-      keys: ["output", "status"],
+      output: {
+        type: "json",
+        keys: {
+          "output": {
+            "type": "string",
+            "description": "Main output"
+          },
+          "status": {
+            "type": "int",
+            "description": "Status code"
+          }
+        }
+      },
       vars: vars
     };
   };
@@ -213,7 +242,19 @@ const PandexAgentEditor = () => {
             headers: { "Content-Type": "application/json" },
             data: { purpose: line }
           },
-          keys: ["output", "status"],
+          output: {
+            type: "json",
+            keys: {
+              "output": {
+                "type": "string",
+                "description": "Main output"
+              },
+              "status": {
+                "type": "int",
+                "description": "Status code"
+              }
+            }
+          },
           vars: {
             input: {
               type: "text",
@@ -235,7 +276,19 @@ const PandexAgentEditor = () => {
           headers: { "Content-Type": "application/json" },
           data: { purpose: userPrompt }
         },
-        keys: ["output", "status"],
+        output: {
+          type: "json",
+          keys: {
+            "output": {
+              "type": "string",
+              "description": "Main output"
+            },
+            "status": {
+              "type": "int",
+              "description": "Status code"
+            }
+          }
+        },
         vars: {
           input: {
             type: "text",
@@ -246,6 +299,143 @@ const PandexAgentEditor = () => {
     }
     
     return { agents };
+  };
+
+  // Output Key Modal Component
+  const OutputKeyModal = () => {
+    const [keyName, setKeyName] = _react.useState.call(void 0, '');
+    const [keyType, setKeyType] = _react.useState.call(void 0, 'string');
+    const [keyDescription, setKeyDescription] = _react.useState.call(void 0, '');
+    
+    _react.useEffect.call(void 0, () => {
+      if (outputKeyModalType === 'edit' && editingOutputKey && currentAgent.output?.keys?.[editingOutputKey]) {
+        const keyConfig = currentAgent.output.keys[editingOutputKey];
+        setKeyName(editingOutputKey);
+        setKeyType(keyConfig.type || 'string');
+        setKeyDescription(keyConfig.description || '');
+      } else {
+        setKeyName('');
+        setKeyType('string');
+        setKeyDescription('');
+      }
+    }, [outputKeyModalType, editingOutputKey, currentAgent]);
+
+    const handleSave = () => {
+      if (!keyName.trim()) {
+        alert('Please enter a key name');
+        return;
+      }
+
+      if (outputKeyModalType === 'add' && currentAgent.output?.keys?.[keyName]) {
+        alert('Key name already exists');
+        return;
+      }
+
+      const newOutput = { ...currentAgent.output };
+      if (!newOutput.keys) {
+        newOutput.keys = {};
+      }
+      
+      const newKeys = { ...newOutput.keys };
+      
+      // If editing and name changed, remove old key
+      if (outputKeyModalType === 'edit' && editingOutputKey && keyName !== editingOutputKey) {
+        delete newKeys[editingOutputKey];
+      }
+
+      newKeys[keyName] = {
+        type: keyType,
+        description: keyDescription
+      };
+
+      newOutput.keys = newKeys;
+      updateAgent('output', newOutput);
+      
+      setShowOutputKeyModal(false);
+      setEditingOutputKey(null);
+    };
+
+    const handleClose = () => {
+      setShowOutputKeyModal(false);
+      setEditingOutputKey(null);
+    };
+
+    return (
+      _react2.default.createElement('div', { className: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"       ,}
+        , _react2.default.createElement('div', { className: "bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4"      ,}
+          , _react2.default.createElement('div', { className: "flex items-center justify-between mb-6"   ,}
+            , _react2.default.createElement('h2', { className: "text-xl font-bold text-gray-900"  ,}
+              , outputKeyModalType === 'add' ? 'Add Output Key' : 'Edit Output Key'
+            )
+            , _react2.default.createElement('button', {
+              onClick: handleClose,
+              className: "p-2 hover:bg-gray-100 rounded-lg transition-colors"   ,}
+
+              , _react2.default.createElement(_lucidereact.X, { className: "w-5 h-5 text-gray-500"  ,} )
+            )
+          )
+
+          , _react2.default.createElement('div', { className: "space-y-4",}
+            , _react2.default.createElement('div', null
+              , _react2.default.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-2"    ,}, "Key Name"
+
+              )
+              , _react2.default.createElement('input', {
+                type: "text",
+                value: keyName,
+                onChange: (e) => setKeyName(e.target.value),
+                className: "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"       ,
+                placeholder: "Enter key name (e.g., content)"    ,
+                autoFocus: true,}
+              )
+            )
+
+            , _react2.default.createElement('div', null
+              , _react2.default.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-2"    ,}, "Type")
+              , _react2.default.createElement(CustomDropdown, {
+                value: keyType,
+                onChange: setKeyType,
+                options: [
+                  { value: 'string', label: 'String', icon: _lucidereact.FileText },
+                  { value: 'int', label: 'Integer', icon: _lucidereact.Hash },
+                  { value: 'bool', label: 'Boolean', icon: _lucidereact.ToggleLeft },
+                  { value: 'array', label: 'Array', icon: _lucidereact.List },
+                  { value: 'object', label: 'Object', icon: _lucidereact.Braces }
+                ],}
+              )
+            )
+
+            , _react2.default.createElement('div', null
+              , _react2.default.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-2"    ,}, "Description"
+
+              )
+              , _react2.default.createElement('input', {
+                type: "text",
+                value: keyDescription,
+                onChange: (e) => setKeyDescription(e.target.value),
+                className: "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"       ,
+                placeholder: "Enter description for this key"  ,}
+              )
+            )
+          )
+
+          , _react2.default.createElement('div', { className: "flex space-x-3 mt-6"  ,}
+            , _react2.default.createElement('button', {
+              onClick: handleClose,
+              className: "flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"       ,}
+, "Cancel"
+
+            )
+            , _react2.default.createElement('button', {
+              onClick: handleSave,
+              className: "flex-1 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"       ,}
+
+              , outputKeyModalType === 'add' ? 'Add Key' : 'Update Key'
+            )
+          )
+        )
+      )
+    );
   };
 
   // Variable Modal Component
@@ -334,7 +524,7 @@ const PandexAgentEditor = () => {
       if (!agentName || !hubConfig.agents[agentName]) {
         return [];
       }
-      return hubConfig.agents[agentName].keys || [];
+      return Object.keys(hubConfig.agents[agentName].output?.keys || {});
     };
 
     return (
@@ -434,7 +624,7 @@ const PandexAgentEditor = () => {
                       ],}
                     )
                     , getAvailableKeys().length === 0 && (
-                      _react2.default.createElement('p', { className: "text-xs text-amber-600 mt-1"  ,}, "Selected agent has no keys defined"     )
+                      _react2.default.createElement('p', { className: "text-xs text-amber-600 mt-1"  ,}, "Selected agent has no output keys defined"     )
                     )
                   )
                 )
@@ -478,20 +668,19 @@ const PandexAgentEditor = () => {
     const [agentName, setAgentName] = _react.useState.call(void 0, '');
     const [template, setTemplate] = _react.useState.call(void 0, '');
     const [url, setUrl] = _react.useState.call(void 0, '');
-    const [keys, setKeys] = _react.useState.call(void 0, '');
+    const [outputType, setOutputType] = _react.useState.call(void 0, 'json');
     
     _react.useEffect.call(void 0, () => {
       if (agentModalType === 'edit' && editingAgent) {
         setAgentName(editingAgent);
         setTemplate(_optionalChain([hubConfig, 'access', _ => _.agents, 'access', _2 => _2[editingAgent], 'optionalAccess', _3 => _3.template]) || '');
         setUrl(_optionalChain([hubConfig, 'access', _4 => _4.agents, 'access', _5 => _5[editingAgent], 'optionalAccess', _6 => _6.executor, 'optionalAccess', _7 => _7.url]) || '');
-        const agentKeys = _optionalChain([hubConfig, 'access', _8 => _8.agents, 'access', _9 => _9[editingAgent], 'optionalAccess', _10 => _10.keys]) || [];
-        setKeys(Array.isArray(agentKeys) ? agentKeys.join(', ') : '');
+        setOutputType(_optionalChain([hubConfig, 'access', _8 => _8.agents, 'access', _9 => _9[editingAgent], 'optionalAccess', _10 => _10.output, 'optionalAccess', _11 => _11.type]) || 'json');
       } else {
         setAgentName('');
         setTemplate('[[PROMPT]]');
         setUrl('');
-        setKeys('output, status');
+        setOutputType('json');
       }
     }, [agentModalType, editingAgent]);
 
@@ -513,8 +702,6 @@ const PandexAgentEditor = () => {
         delete newConfig.agents[editingAgent];
       }
 
-      const agentKeys = keys.split(',').map(k => k.trim()).filter(k => k);
-
       newConfig.agents[agentName] = {
         template: template || '[[PROMPT]]',
         executor: {
@@ -523,7 +710,19 @@ const PandexAgentEditor = () => {
           headers: { "Content-Type": "application/json" },
           data: {}
         },
-        keys: agentKeys,
+        output: {
+          type: outputType,
+          keys: {
+            "content": {
+              "type": "string",
+              "description": "Main content output"
+            },
+            "status": {
+              "type": "int",
+              "description": "Status code"
+            }
+          }
+        },
         vars: {
           prompt: {
             type: "text",
@@ -588,15 +787,16 @@ const PandexAgentEditor = () => {
             )
 
             , _react2.default.createElement('div', null
-              , _react2.default.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-2"    ,}, "Keys (comma-separated)"   )
-              , _react2.default.createElement('input', {
-                type: "text",
-                value: keys,
-                onChange: (e) => setKeys(e.target.value),
-                className: "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"       ,
-                placeholder: "output, status, metadata"  ,}
+              , _react2.default.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-2"    ,}, "Output Type")
+              , _react2.default.createElement(CustomDropdown, {
+                value: outputType,
+                onChange: setOutputType,
+                options: [
+                  { value: 'json', label: 'JSON', icon: _lucidereact.Braces },
+                  { value: 'text', label: 'Text', icon: _lucidereact.FileText },
+                  { value: 'xml', label: 'XML', icon: _lucidereact.Code }
+                ],}
               )
-              , _react2.default.createElement('p', { className: "text-xs text-gray-500 mt-1"  ,}, "Keys that this agent will output"    )
             )
 
             , _react2.default.createElement('div', null
@@ -686,6 +886,27 @@ const PandexAgentEditor = () => {
       const newVars = { ...currentAgent.vars };
       delete newVars[varName];
       updateAgent('vars', newVars);
+    }
+  };
+
+  const addOutputKey = () => {
+    setOutputKeyModalType('add');
+    setShowOutputKeyModal(true);
+  };
+
+  const editOutputKey = (keyName) => {
+    setOutputKeyModalType('edit');
+    setEditingOutputKey(keyName);
+    setShowOutputKeyModal(true);
+  };
+
+  const removeOutputKey = (keyName) => {
+    if (confirm(`Are you sure you want to delete output key "${keyName}"? This action cannot be undone.`)) {
+      const newOutput = { ...currentAgent.output };
+      const newKeys = { ...newOutput.keys };
+      delete newKeys[keyName];
+      newOutput.keys = newKeys;
+      updateAgent('output', newOutput);
     }
   };
 
@@ -799,7 +1020,15 @@ The JSON should have this structure:
         "headers": {"Content-Type": "application/json"},
         "data": {}
       },
-      "keys": ["output", "status", "metadata"],
+      "output": {
+        "type": "json",
+        "keys": {
+          "key_name": {
+            "type": "string|int|bool|array|object",
+            "description": "description of the key"
+          }
+        }
+      },
       "vars": {
         "variable_name": {
           "type": "text",
@@ -823,7 +1052,15 @@ The JSON should have this structure:
     "headers": {"Content-Type": "application/json"},
     "data": {}
   },
-  "keys": ["output", "status", "metadata"],
+  "output": {
+    "type": "json",
+    "keys": {
+      "key_name": {
+        "type": "string|int|bool|array|object",
+        "description": "description of the key"
+      }
+    }
+  },
   "vars": {
     "variable_name": {
       "type": "text",
@@ -887,7 +1124,19 @@ Create an agent that performs the described task. Use meaningful variable names 
                 headers: { "Content-Type": "application/json" },
                 data: { prompt: generatePrompt }
               },
-              keys: ["output", "status"],
+              output: {
+                type: "json",
+                keys: {
+                  "output": {
+                    "type": "string",
+                    "description": "Main output"
+                  },
+                  "status": {
+                    "type": "int",
+                    "description": "Status code"
+                  }
+                }
+              },
               vars: {
                 input: {
                   type: "text",
@@ -910,7 +1159,19 @@ Create an agent that performs the described task. Use meaningful variable names 
             headers: { "Content-Type": "application/json" },
             data: { purpose: generatePrompt }
           },
-          keys: ["output", "status"],
+          output: {
+            type: "json",
+            keys: {
+              "output": {
+                "type": "string",
+                "description": "Main output"
+              },
+              "status": {
+                "type": "int",
+                "description": "Status code"
+              }
+            }
+          },
           vars: {
             input: {
               type: "text",
@@ -1063,7 +1324,7 @@ Create an agent that performs the described task. Use meaningful variable names 
     switch (fieldType) {
       case 'template': return _react2.default.createElement(_lucidereact.Code, { className: "w-4 h-4" ,} );
       case 'executor': return _react2.default.createElement(_lucidereact.Zap, { className: "w-4 h-4" ,} );
-      case 'keys': return _react2.default.createElement(_lucidereact.Key, { className: "w-4 h-4" ,} );
+      case 'output': return _react2.default.createElement(_lucidereact.FileOutput, { className: "w-4 h-4" ,} );
       case 'vars': return _react2.default.createElement(_lucidereact.Database, { className: "w-4 h-4" ,} );
       default: return _react2.default.createElement(_lucidereact.Settings, { className: "w-4 h-4" ,} );
     }
@@ -1179,21 +1440,71 @@ Create an agent that performs the described task. Use meaningful variable names 
       );
     }
 
-    if (fieldPath === 'keys') {
+    if (fieldPath === 'output') {
       return (
         _react2.default.createElement('div', { className: "space-y-4",}
-          , _react2.default.createElement('label', { className: "block text-sm font-medium text-gray-700"   ,}, "Keys (comma-separated)"   )
-          , _react2.default.createElement('input', {
-            type: "text",
-            value: Array.isArray(localData) ? localData.join(', ') : '',
-            onChange: (e) => {
-              const newKeys = e.target.value.split(',').map(k => k.trim()).filter(k => k);
-              handleDirectUpdate(newKeys);
-            },
-            className: "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"       ,
-            placeholder: "output, status, metadata"  ,}
+          , _react2.default.createElement('div', null
+            , _react2.default.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-2"    ,}, "Output Type")
+            , _react2.default.createElement(CustomDropdown, {
+              value: localData.type || 'json',
+              onChange: (value) => handleUpdate('type', value),
+              options: [
+                { value: 'json', label: 'JSON', icon: _lucidereact.Braces },
+                { value: 'text', label: 'Text', icon: _lucidereact.FileText },
+                { value: 'xml', label: 'XML', icon: _lucidereact.Code }
+              ],}
+            )
           )
-          , _react2.default.createElement('p', { className: "text-xs text-gray-500" ,}, "Keys that this agent will output"    )
+          , _react2.default.createElement('div', null
+            , _react2.default.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-2"    ,}, "Output Keys")
+            , _react2.default.createElement('div', { className: "space-y-2",}
+              , Object.entries(localData.keys || {}).map(([keyName, keyConfig]) => (
+                _react2.default.createElement('div', { key: keyName, className: "flex items-center justify-between p-2 bg-gray-50 rounded border"     ,}
+                  , _react2.default.createElement('div', { className: "flex-1",}
+                    , _react2.default.createElement('span', { className: "font-medium text-sm" ,}, keyName)
+                    , _react2.default.createElement('span', { className: `ml-2 px-2 py-0.5 text-xs rounded-full ${
+                      keyConfig.type === 'string' ? 'bg-green-100 text-green-800' :
+                      keyConfig.type === 'int' ? 'bg-blue-100 text-blue-800' :
+                      keyConfig.type === 'bool' ? 'bg-purple-100 text-purple-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`,}
+                      , keyConfig.type
+                    )
+                    , keyConfig.description && (
+                      _react2.default.createElement('p', { className: "text-xs text-gray-500 mt-1"  ,}, keyConfig.description)
+                    )
+                  )
+                  , mode === 'edit' && (
+                    _react2.default.createElement('div', { className: "flex items-center space-x-1"  ,}
+                      , _react2.default.createElement('button', {
+                        onClick: () => editOutputKey(keyName),
+                        className: "p-1 text-blue-500 hover:bg-blue-100 rounded"   ,
+                        title: "Edit key" ,}
+
+                        , _react2.default.createElement(_lucidereact.Edit3, { className: "w-3 h-3" ,} )
+                      )
+                      , _react2.default.createElement('button', {
+                        onClick: () => removeOutputKey(keyName),
+                        className: "p-1 text-red-500 hover:bg-red-100 rounded"   ,
+                        title: "Delete key" ,}
+
+                        , _react2.default.createElement(_lucidereact.Trash2, { className: "w-3 h-3" ,} )
+                      )
+                    )
+                  )
+                )
+              ))
+              , mode === 'edit' && (
+                _react2.default.createElement('button', {
+                  onClick: addOutputKey,
+                  className: "w-full p-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-300 hover:text-blue-500 transition-colors"        ,}
+
+                  , _react2.default.createElement(_lucidereact.Plus, { className: "w-4 h-4 inline mr-2" ,} )
+                  , "Add Output Key"
+                )
+              )
+            )
+          )
         )
       );
     }
@@ -1266,7 +1577,7 @@ Create an agent that performs the described task. Use meaningful variable names 
         if (!localData.agent || !hubConfig.agents[localData.agent]) {
           return [];
         }
-        return hubConfig.agents[localData.agent].keys || [];
+        return Object.keys(hubConfig.agents[localData.agent].output?.keys || {});
       };
       
       return (
@@ -1346,7 +1657,7 @@ Create an agent that performs the described task. Use meaningful variable names 
                     ],}
                   )
                   , getAvailableKeys().length === 0 && (
-                    _react2.default.createElement('p', { className: "text-xs text-amber-600 mt-1"  ,}, "Selected agent has no keys defined"     )
+                    _react2.default.createElement('p', { className: "text-xs text-amber-600 mt-1"  ,}, "Selected agent has no output keys defined"     )
                   )
                 )
               )
@@ -1544,6 +1855,9 @@ Create an agent that performs the described task. Use meaningful variable names 
       /* Variable Modal */
       , showVariableModal && _react2.default.createElement(VariableModal, null )
 
+      /* Output Key Modal */
+      , showOutputKeyModal && _react2.default.createElement(OutputKeyModal, null )
+
       /* Title Bar */
       , _react2.default.createElement('div', { className: "bg-white border-b border-gray-200 px-6 py-4"    ,}
         , _react2.default.createElement('div', { className: "flex items-center justify-between w-full"   ,}
@@ -1724,8 +2038,8 @@ Create an agent that performs the described task. Use meaningful variable names 
                   )
                   , _react2.default.createElement('p', { className: "text-sm text-gray-500 mt-1"  ,}
                     , Object.keys(hubConfig.agents[agentName].vars || {}).length, " variables"
-                    , hubConfig.agents[agentName].keys && hubConfig.agents[agentName].keys.length > 0 && (
-                      _react2.default.createElement('span', null, " • ", hubConfig.agents[agentName].keys.length, " keys")
+                    , hubConfig.agents[agentName].output?.keys && Object.keys(hubConfig.agents[agentName].output.keys).length > 0 && (
+                      _react2.default.createElement('span', null, " • ", Object.keys(hubConfig.agents[agentName].output.keys).length, " output keys")
                     )
                   )
                 )
@@ -1817,26 +2131,50 @@ Create an agent that performs the described task. Use meaningful variable names 
                   )
                 )
 
-                /* Keys Section */
+                /* Output Section */
                 , _react2.default.createElement('div', { className: "bg-white rounded-lg shadow-sm border border-gray-200 p-6"     ,}
                   , _react2.default.createElement('div', { 
                     className: "flex items-center space-x-2 mb-4 cursor-pointer hover:text-blue-600 transition-colors"      ,
-                    onClick: () => handleFieldClick('keys', currentAgent.keys),}
+                    onClick: () => handleFieldClick('output', currentAgent.output),}
 
-                    , getFieldIcon('keys')
-                    , _react2.default.createElement('h3', { className: "text-lg font-semibold text-gray-900"  ,}, "Keys")
+                    , getFieldIcon('output')
+                    , _react2.default.createElement('h3', { className: "text-lg font-semibold text-gray-900"  ,}, "Output Configuration")
                   )
-                  , _react2.default.createElement('div', { className: "p-3 bg-gray-50 rounded-lg border"    ,}
-                    , _react2.default.createElement('div', { className: "flex flex-wrap gap-2"  ,}
-                      , (currentAgent.keys || []).map((key, index) => (
-                        _react2.default.createElement('span', {
-                          key: index,
-                          className: "px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"     ,}
-                          , key
+                  , _react2.default.createElement('div', { className: "space-y-3",}
+                    , _react2.default.createElement('div', { className: "flex items-center space-x-2"  ,}
+                      , _react2.default.createElement('span', { className: "text-sm font-medium text-gray-500"  ,}, "Type:")
+                      , _react2.default.createElement('span', { className: `px-2 py-1 text-xs font-medium rounded-full ${
+                        currentAgent.output?.type === 'json' ? 'bg-blue-100 text-blue-800' :
+                        currentAgent.output?.type === 'text' ? 'bg-green-100 text-green-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`,}
+                        , currentAgent.output?.type || 'json'
+                      )
+                    )
+                    , _react2.default.createElement('div', null
+                      , _react2.default.createElement('span', { className: "text-sm font-medium text-gray-500 block mb-2"   ,}, "Output Keys:")
+                      , _react2.default.createElement('div', { className: "space-y-2",}
+                        , Object.entries(currentAgent.output?.keys || {}).map(([keyName, keyConfig]) => (
+                          _react2.default.createElement('div', { key: keyName, className: "flex items-center justify-between p-2 bg-gray-50 rounded border"     ,}
+                            , _react2.default.createElement('div', null
+                              , _react2.default.createElement('span', { className: "font-medium text-sm" ,}, keyName)
+                              , _react2.default.createElement('span', { className: `ml-2 px-2 py-0.5 text-xs rounded-full ${
+                                keyConfig.type === 'string' ? 'bg-green-100 text-green-800' :
+                                keyConfig.type === 'int' ? 'bg-blue-100 text-blue-800' :
+                                keyConfig.type === 'bool' ? 'bg-purple-100 text-purple-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`,}
+                                , keyConfig.type
+                              )
+                              , keyConfig.description && (
+                                _react2.default.createElement('p', { className: "text-xs text-gray-500 mt-1"  ,}, keyConfig.description)
+                              )
+                            )
+                          )
+                        ))
+                        , (!currentAgent.output?.keys || Object.keys(currentAgent.output.keys).length === 0) && (
+                          _react2.default.createElement('span', { className: "text-gray-500 text-sm"  ,}, "No output keys defined")
                         )
-                      ))
-                      , (!currentAgent.keys || currentAgent.keys.length === 0) && (
-                        _react2.default.createElement('span', { className: "text-gray-500 text-sm"  ,}, "No keys defined")
                       )
                     )
                   )
