@@ -12,46 +12,10 @@ class PandexExecutor(object) :
         self.config = config or {}
     
     def process(self, data = None) : 
-        print("Processing data in PandexExecutor...")
+        print(f"\033[96;1m[PandexExecutor]\033[0m processing data: {data}")
         return {"status" : 0, "output" : ""} 
 
 class PandexAPIExecutor(PandexExecutor) :
-    """
-    A class representing a Pandex agent executor to call a API.
-    """
-    def __init__(self, config = None):
-        """
-        Initialize the API executor with a configuration.
-        """
-        super().__init__(config)
-        self.url = self.config.get("url", None)
-        self.headers = self.config.get("headers", None)
-        self.data = self.config.get("data", {})
-
-    def process(self, data = None) : 
-        result = {"status" : -1, "output" : None, "error" : None} 
-        print("Processing data in PandexAPIExecutor...")
-
-        if data is None : 
-            data = self.data
-
-        prompt = data.get("input", {}).get("value", self.data.get("prompt", "Response to 'Hello world', and add a reminder to the user to notice that this is the default prompt."))
-        try :
-            response = curl_cffi.requests.get(f"https://text.pollinations.ai/{urllib.parse.quote(prompt)}")
-            if response.status_code == 200 :
-                result["output"] = response.text 
-                if result["output"] is None : 
-                    result["status"] = 1
-                    result["error"] = f"Invalid response: {response}"
-            else :
-                result["status"] = 1
-                result["error"] = f"Reponse error: {response.status_code}"
-        except Exception as e :
-            result["status"] = 2
-            result["error"] = f"Exception: {e}"
-        return result
-
-class PandexPollinationsExecutor(PandexExecutor) :
     """
     A class representing a Pandex agent executor to call a API.
     """
@@ -61,12 +25,15 @@ class PandexPollinationsExecutor(PandexExecutor) :
         """
         super().__init__(config)
         self.url = self.config.get("url", None)
-        self.headers = self.config.get("headers", None)
+        self.headers = {
+            "Authorization": "Bearer %s" % self.config.get("api_key", ""),
+            "Content-Type" : "application/json",
+        }
         self.data = self.config.get("data", {})
 
     def process(self, data = None) : 
+        print(f"\033[96;1m[PandexAPIExecutor]\033[0m processing data: {data}")
         result = {"status" : -1, "output" : None, "error" : None} 
-        print("Processing data in PandexAPIExecutor...")
 
         if data is None : 
             data = self.data
@@ -88,7 +55,7 @@ class PandexPollinationsExecutor(PandexExecutor) :
         try :
             response = curl_cffi.requests.post(
                 self.url,
-                headers = self.headers or {"Content-Type" : "application/json"},
+                headers = self.headers,
                 json = payload,
             )
             if response.status_code == 200 :
@@ -110,3 +77,37 @@ class PandexPollinationsExecutor(PandexExecutor) :
         return result
 
 
+class PandexPollinationsExecutor(PandexExecutor) :
+    """
+    A class representing a Pandex agent executor to call a Pollinations API.
+    """
+    def __init__(self, config = None):
+        """
+        Initialize the Pollinations executor with a configuration.
+        """
+        super().__init__(config)
+        self.url = self.config.get("url", None)
+
+    def process(self, data = None) : 
+        print(f"\033[96;1m[PandexPollinationsExecutor]\033[0m processing data: {data}")
+        result = {"status" : -1, "output" : None, "error" : None} 
+        prompt = data.get("input", {}).get("value", "Response to 'Hello world', and add a reminder to the user to notice that this is the default prompt.")
+        try :
+            response = curl_cffi.requests.get(f"https://text.pollinations.ai/{urllib.parse.quote(prompt)}")
+            if response.status_code == 200 :
+                result["output"] = response.text 
+                if result["output"] is None : 
+                    result["status"] = 1
+                    result["error"] = f"Invalid response: {response}"
+            else :
+                result["status"] = 1
+                result["error"] = f"Reponse error: {response.status_code}"
+        except Exception as e :
+            result["status"] = 2
+            result["error"] = f"Exception: {e}"
+        return result
+
+available_executors = {
+    "api": PandexAPIExecutor,
+    "pollinations": PandexPollinationsExecutor,
+}

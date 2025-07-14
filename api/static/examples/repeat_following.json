@@ -1,0 +1,44 @@
+{
+    "agents" : {
+        "repeat" : {
+            "template": "[[PROMPT]] : [[REFERENCE]]",
+            "executor": {
+                "type": "pollinations"
+            },
+            "vars": {
+                "prompt": {
+                    "type": "text",
+                    "default": "Repeat the following content and add a timestamp"
+                },
+                "reference": {
+                    "type": "agent",
+                    "agent" : "hello",
+                    "plan" : {"vals" : {"prompt" : "what is pollinations ai"}}, 
+                    "key" : "response",
+                    "default": "Everything is okay."
+                }
+            }
+        },
+        "hello" : {
+            "template": "[[PROMPT]]",
+            "executor": {
+                "type": "pollinations"
+            },
+            "output" : {
+                "type" : "json",
+                "keys" : {
+                    "response" : {
+                        "type" : "string",
+                        "description" : "response content" 
+                    }
+                }
+            },
+            "vars": {
+                "prompt": {
+                    "type": "text",
+                    "default": "Hello world."
+                }
+            }
+        } 
+    }
+}

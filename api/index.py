@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-import sys, json, traceback
+import os, sys, json, traceback
 
-from .agent import PandexHub, PandexAgent
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from agent import PandexHub, PandexAgent
 
 app = Flask(__name__)
 CORS(app)
@@ -42,6 +44,54 @@ def create_or_update_hub():
             "traceback": traceback.format_exc()
         }), 500
 
+@app.route('/api/hub/execute', methods=['POST'])
+def hub_execute():
+    try:
+        data = request.get_json()
+        
+        # Extract required parameters
+        config_hub = data.get('configHub', {})
+        agent_name = data.get('agentName', '')
+        plan = data.get('plan', {})
+        
+        if not config_hub :
+            return jsonify({
+                'status': 'error',
+                'message': 'configHub is required'
+            }), 400
+
+        if not agent_name:
+            return jsonify({
+                'status': 'error',
+                'message': 'agentName is required'
+            }), 400
+        
+        # Step 1: Update hub config (like /api/hub POST method)
+        working_hub = PandexHub(config_hub)
+        
+        # Step 2: Execute the specified agent (like /api/agent/execute)
+        if agent_name not in working_hub.agents:
+            return jsonify({
+                'status': 'error',
+                'message': f'Agent "{agent_name}" not found'
+            }), 404
+        
+        agent = working_hub.agents[agent_name]
+        result = agent.execute(plan)
+        
+        return jsonify({
+            'status': 'success',
+            'agent': agent_name,
+            'result': result,
+            'hub_status': working_hub.get_status()
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
 @app.route('/api/hub', methods=['GET'])
 def get_hub_info():
     """Get information about the current hub"""
@@ -66,6 +116,15 @@ def get_hub_status():
         "status": "success",
         "hub_status": current_hub.get_status()
     })
+
+@app.route('/api/examples', methods=['GET'])
+def get_hub_examples():
+    """Get PandexHub examples"""
+    examples = []
+    for file in os.listdir("api/static/examples") :
+        if not file.startswith(".") and file.endswith(".json") :
+            examples.append(os.path.splitext(file)[0])
+    return jsonify(examples) 
 
 @app.route('/api/agent/<agent_name>/execute', methods=['POST'])
 def execute_agent(agent_name):

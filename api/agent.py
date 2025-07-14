@@ -1,6 +1,9 @@
 
-import re
-from .executor import * 
+import re, os, sys
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from executor import * 
 
 def split_content_and_json(text) :
     content, data = text, {}
@@ -26,6 +29,11 @@ def split_content_and_json(text) :
             content, data = text, {}
         if type(data) == dict and len(data) > 0 :
             break
+    if len(data) < 1 :
+        try :
+            data = json5.loads(content)
+        except Exception as e :
+            content, data = content, {}
     return content, data
 
 class PandexAgent(object) :
@@ -72,8 +80,8 @@ class PandexAgent(object) :
 
         if "executor" in self.config.keys() :
             _type = self.config.get("executor", {}).get("type", None)
-            if _type == "api" :
-                self.executor = PandexAPIExecutor(self.config["executor"]) 
+            if _type in available_executors.keys() :
+                self.executor = available_executors[_type](self.config["executor"]) 
             else :
                 print(f"Invalid executor config: {self.config['executor']}")
         else :
@@ -91,7 +99,7 @@ class PandexAgent(object) :
             "output" : None,
             "error" : None,
         }
-        print(f"Agent {self.name} initialized with config: {self.config}")
+        print(f"\033[38;5;214m[Agent {self.name}]\033[0m initialized with config: {self.config}")
 
     def get_value(self, var) : 
         value = None
@@ -109,13 +117,18 @@ class PandexAgent(object) :
                 elif _type == "bool" : 
                     value = bool(value)
                 elif _type == "agent" : 
-                    agent = self.hub.agents.get(config.get("agent", None), None) 
-                    result = agent.execute(config.get("plan", {}))
-                    key = config.get("key", None)
-                    if key is not None and key in result.keys() :
-                        value = result.get(key, "")
-                    else : 
-                        value = result.get("output", "")
+                    name = config.get("agent", None) 
+                    agent = self.hub.agents.get(name, None) 
+                    if agent is not None :
+                        result = agent.execute(config.get("plan", {}))
+                        key = config.get("key", None)
+                        if key is not None and key in result.get("keys", {}).keys() :
+                            value = result.get("keys", {})[key]
+                        else : 
+                            value = None  
+                    else: 
+                        print(f"Can't find agent '{name}'.")
+                        value = None
             except Exception as e :
                 print(f"Error getting value for variable '{var}': {e}")
                 value = None
@@ -126,11 +139,12 @@ class PandexAgent(object) :
         Update values for the variables.
         """
         if plan is not None : 
-            for var, value in plan.get("vars", {}).items() :
+            for var, value in plan.get("vals", {}).items() :
                 self.plan["vals"][var] = value
         for var in self.config.get("vars", {}).keys() :
             if (plan is None or var not in self.plan.get("vals", {}).keys()) and (var not in self.plan["vals"].keys() or refresh == True) :
                 self.plan["vals"][var] = self.get_value(var)
+        print(self.plan)
     
     def replace(self) :
         for var, value in self.plan["vals"].items() :
@@ -157,31 +171,39 @@ The result should be formatted in **JSON** dictionary and enclosed in **triple b
         Execute the agent's main logic.
         """
         if self.executor is not None :
-            print(f"Agent {self.name} is executed.")
-            self.update(plan)
-            self.replace()
-            output_type = self.config.get("output", {}).get("type", "raw") 
-            if output_type == "json" : 
-                result = self.executor.process(self.plan)
-                content, data = split_content_and_json(str(result.get("output", "")))
-                for key in self.config.get("output", {}).get("keys", {}).keys() :
-                    if key in data.keys() :
-                        if self.config["output"]["keys"][key]["type"] == "int" :
-                            self.result["output"] = int(data[key])
-                        elif self.config["output"]["keys"][key]["type"] == "float" :
-                            self.result["output"] = float(data[key])
-                        elif self.config["output"]["keys"][key]["type"] == "bool" :
-                            self.result["output"] = bool(data[key])
-                        elif self.config["output"]["keys"][key]["type"] == "string" :
-                            self.result["output"] = str(data[key])
-                        else :
-                            self.result["output"] = data[key]
-                    else :
-                        self.result[key] = None
-            else :
+            print(f"\033[38;5;214m[Agent {self.name}]\033[0m is executed with plan: {plan}")
+            try : 
+                self.update(plan)
+                self.replace()
                 self.result = self.executor.process(self.plan)
+                print(f"\033[38;5;214m[Agent {self.name}]\033[0m raw result: {self.result}")
+                output_type = self.config.get("output", {}).get("type", "raw") 
+                output_keys = self.config.get("output", {}).get("keys", {}) 
+                if output_type == "json" and len(output_keys) > 0: 
+                    content, data = split_content_and_json(str(self.result.get("output", "")))
+                    self.result["output"], self.result["keys"] = content, {} 
+                    for key in output_keys.keys() :
+                        if key in data.keys() :
+                            if output_keys[key]["type"] == "int" :
+                                self.result["keys"][key] = int(data[key])
+                            elif output_keys[key]["type"] == "float" :
+                                self.result["keys"][key] = float(data[key])
+                            elif output_keys[key]["type"] == "bool" :
+                                self.result["keys"][key] = bool(data[key])
+                            elif output_keys[key]["type"] == "string" :
+                                self.result["keys"][key] = str(data[key])
+                            else :
+                                self.result["keys"][key] = data[key]
+                        else :
+                            self.result[key] = None
+                self.result["status"] = 0
+            except Exception as e :
+                self.result["status"] = -1
+                self.result["error"] = str(e)
+                print(f"\033[38;5;214m[Agent {self.name}]\033[0m execution error: {e}")
         else :
             print(f"Agent {self.name} cannot be executed without executor")
+        print(f"\033[38;5;214m[Agent {self.name}]\033[0m execution result: {self.result}")
         return self.result
 
 class PandexHub(object) :
@@ -197,7 +219,7 @@ class PandexHub(object) :
         self.agents = {}
         for name, config in self.config.get("agents", {}).items():
             self.agents[name] = PandexAgent(name, self, config)
-        print(f"Hub initialized with config: {self.config}")
+        print(f"\033[92;1m[Hub]\033[0m initialized with config: {self.config}")
     
     def add_status(self, status) : 
         self.status.append(f"{status}")

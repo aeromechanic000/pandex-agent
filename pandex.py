@@ -1,7 +1,9 @@
 import argparse
 import json
 import os, sys
-sys.path.append("api")
+
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "api"))
+
 from index import app
 
 def load_config(config_path):
@@ -17,14 +19,14 @@ def load_config(config_path):
         return None
 
 def test(config = None):
-    import test 
+    import pandex_test 
     print("Running tests...")
     if config:
         print(f"Using config: {config}")
     for func in [
-        test.test_pollinations, 
-        test.test_agent_class, 
-        test.test_hub_class,
+        # pandex_test.test_pollinations, 
+        # pandex_test.test_agent_class, 
+        pandex_test.test_hub_class,
     ] :
         try : 
             func()

@@ -1,0 +1,16 @@
+{
+    "agents" : {
+        "simple" : {
+            "template": "[[PROMPT]]",
+            "executor": {
+                "type": "pollinations"
+            },
+            "vars": {
+                "prompt": {
+                    "type": "text",
+                    "default": "Hello world."
+                }
+            }
+        }
+    }
+}
