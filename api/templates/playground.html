@@ -13,10 +13,7 @@ const PandexAgentEditor = () => {
       "simple": {
         "template": "[[PROMPT]]",
         "executor": {
-          "type": "api",
-          "url": "https://text.pollinations.ai/openai",
-          "headers": {"Content-Type": "application/json"},
-          "data": {"model": "deepseek", "prompt": "Hello world."}
+          "type": "pollinations",
         },
         "output": {
           "type": "raw",
