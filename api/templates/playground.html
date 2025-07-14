@@ -1007,69 +1007,103 @@ const PandexAgentEditor = () => {
       let aiPrompt;
       
       if (generateType === 'hub') {
-        aiPrompt = `Create a JSON configuration for a Pandex Agent Hub based on this description: "${generatePrompt}". 
+        aiPrompt = `You are generating a JSON configuration for a Pandex Agent Hub, which manages and coordinates multiple intelligent agents. The configuration defines the structure and behavior of each agent in a modular and composable way.
 
-The JSON should have this structure:
+Please generate a valid JSON object with the following structure:
+
 {
   "agents": {
-    "agent_name": {
-      "template": "Template text with [[VARIABLE_NAME]] placeholders",
+    "AGENT_NAME": {
+      "template": "Input prompt template using [[VARIABLE]] placeholders.",
       "executor": {
-        "type": "api",
-        "url": "https://api.example.com/endpoint",
-        "headers": {"Content-Type": "application/json"},
-        "data": {}
+        "type": "api | pollinations | ...",       // Type of executor backend
+        "url": "https://...",                      // Optional: target URL for API-based executors
+        "headers": {"Content-Type": "application/json"}, // Optional: request headers
+        "data": {}                                 // Optional: static request body
       },
       "output": {
-        "type": "json",
-        "keys": {
+        "type": "raw | json",                      // Output format
+        "keys": {                                  // Required if type is 'json'
           "key_name": {
-            "type": "string|int|bool|array|object",
-            "description": "description of the key"
+            "type": "string | int | bool | array | object",
+            "description": "Describe what this output key means"
           }
         }
       },
       "vars": {
-        "variable_name": {
-          "type": "text",
-          "default": "default value"
+        "VARIABLE_NAME": {
+          "type": "text | int | float | bool | agent",  // Variable input type
+          "default": "default value",                   // Default or computed value
+          
+          // If type is 'agent', define a reference to another agent:
+          "agent": "other_agent_name",
+          "plan": {
+            "vals": { "var": "value" }
+          },
+          "key": "key_name_from_output"
         }
       }
     }
   }
 }
 
-Create multiple agents that work together for the described purpose. Use meaningful agent names and templates. Include variables with [[VARIABLE_NAME]] format in templates.`;
-      } else {
-        aiPrompt = `Create a JSON configuration for a single Pandex Agent based on this description: "${generatePrompt}".
+Additional Notes:
+- Each 'agent' performs a task using its 'template' with substituted variables and executes via its 'executor'.
+- If 'output.type' is 'json', the agent expects the result in JSON wrapped in triple backticks.
+- Agents can reference each other through variables of type 'agent', enabling multi-agent chaining.
+- Use meaningful agent names and human-readable descriptions.
+- Include at least two interacting agents in your configuration.
+- If proper, use the 'pollinations' executor type for AI-based agents.
 
-The JSON should have this structure:
+Now, based on the following task description:
+
+"${generatePrompt}"
+
+Generate a complete JSON config of a Pandex Agent Hub that defines multiple cooperative agents to achieve the described task.`;
+      } else {
+        aiPrompt = `Create a JSON configuration for a single Pandex Agent based on the following task description:
+
+"${generatePrompt}"
+
+This agent will perform one specific task using the PandexAgent framework. The configuration must follow this structure:
+
 {
-  "template": "Template text with [[VARIABLE_NAME]] placeholders describing what the agent does",
+  "template": "Text template that describes the task with [[VARIABLE_NAME]] placeholders.",
   "executor": {
-    "type": "api", 
-    "url": "https://api.example.com/endpoint",
-    "headers": {"Content-Type": "application/json"},
-    "data": {}
+    "type": "api | pollinations | other_executor_type",
+    "url": "https://example.com/endpoint",              // Optional for non-api executors
+    "headers": {"Content-Type": "application/json"},    // Optional headers
+    "data": {}                                           // Optional static request payload
   },
   "output": {
-    "type": "json",
+    "type": "raw | json",                                // Use 'json' if output needs structured keys
     "keys": {
       "key_name": {
-        "type": "string|int|bool|array|object",
-        "description": "description of the key"
+        "type": "string | int | bool | array | object",
+        "description": "Explain what this key contains and why it is needed"
       }
     }
   },
   "vars": {
-    "variable_name": {
-      "type": "text",
-      "default": "default value"
+    "VARIABLE_NAME": {
+      "type": "text | int | float | bool | agent",       // Input type for the variable
+      "default": "default value or computation reference"
+      
+      // If the type is 'agent', include the following:
+      // "agent": "referenced_agent_name",
+      // "plan": { "vals": { "var": "value" } },
+      // "key": "key_from_referenced_output"
     }
   }
 }
 
-Create an agent that performs the described task. Use meaningful variable names and include them in the template with [[VARIABLE_NAME]] format.`;
+Guidelines:
+- Use meaningful agent variable names and reflect them in the 'template' using the [[VARIABLE_NAME]] format.
+- Design 'output.keys' thoughtfully if the output needs to be parsed or chained to other agents.
+- Prefer simple but descriptive JSON fields to improve readability and usability.
+- The agent should be self-contained and executable independently.
+
+Now, based on the description above, generate the full JSON configuration for the agent.`;
       }
 
       console.log('Sending prompt to Pollinations AI:', aiPrompt);
