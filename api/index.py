@@ -11,17 +11,15 @@ CORS(app)
 
 # Global hub instance
 current_hub = None
-base_url = "http://localhost:3333"
+base_url = os.environ.get("PANDEX_BASE_URL", "http://localhost:3333")
 
 @app.route('/')
 def index():
     """Serve the playground frontend"""
-    global base_url
     return render_template('playground.html', base_url=base_url)
 
 @app.route('/playground')
 def playground():
-    global base_url
     """Serve the playground frontend"""
     return render_template('playground.html', base_url=base_url)
 
@@ -243,6 +241,4 @@ def list_agents():
     })
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1 : 
-        base_url = sys.argv[1] 
     app.run(debug=True, host='0.0.0.0')
