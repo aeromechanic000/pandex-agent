@@ -343,6 +343,10 @@ const PandexAgentEditor = () => {
       
       setShowOutputKeyModal(false);
       setEditingOutputKey(null);
+
+      setTimeout(() => {
+        handleFieldClick('output', newOutput)
+      }, 5);
     };
 
     const handleClose = () => {
@@ -457,6 +461,7 @@ const PandexAgentEditor = () => {
     }, [variableModalType, editingVariable, currentAgent]);
 
     const handleSave = () => {
+
       if (!varName.trim()) {
         alert('Please enter a variable name');
         return;
@@ -502,6 +507,10 @@ const PandexAgentEditor = () => {
       
       setShowVariableModal(false);
       setEditingVariable(null);
+
+      setTimeout(() => {
+        handleFieldClick(`vars.${varName}`, varConfig)
+      }, 5);
     };
 
     const handleClose = () => {
@@ -900,8 +909,10 @@ const PandexAgentEditor = () => {
   };
 
   const handleFieldClick = (fieldPath, fieldData) => {
-    setSelectedField({ path: fieldPath, data: fieldData, agentName: selectedAgent });
-    setRightPanelView('field');
+    if (fieldData) {
+      setSelectedField({ path: fieldPath, data: fieldData, agentName: selectedAgent });
+      setRightPanelView('field');
+    }
   };
 
   const jumpToAgent = (agentName) => {
@@ -1353,17 +1364,57 @@ Create an agent that performs the described task. Use meaningful variable names 
   const FieldEditor = ({ fieldPath, fieldData, onUpdate, agentName }) => {
     const [localData, setLocalData] = _react.useState.call(void 0, fieldData);
     const [isUpdating, setIsUpdating] = _react.useState.call(void 0, false);
+    let fieldDataTemp = JSON.parse(JSON.stringify(fieldData));
+    const [localDataTemp, setLocalDataTemp] = _react.useState.call(void 0, fieldDataTemp);
+
+    const fixJsonDataField = () => {
+      if (fieldPath == 'executor') {
+        if (typeof localDataTemp.headers !== 'string') {
+          localDataTemp.headers = JSON.stringify(localDataTemp.headers || {}, null, 2)
+        }
+        if (typeof localDataTemp.data !== 'string') {
+          localDataTemp.data = JSON.stringify(localDataTemp.data || {}, null, 2)
+        }
+      }
+
+      if (fieldPath.startsWith('vars.') && typeof localDataTemp.plan !== 'string') {
+        localDataTemp.plan = JSON.stringify(localDataTemp.plan || {}, null, 2)
+      }
+    }
+
+    fixJsonDataField();
 
     // Only update local state when fieldData changes and we're not currently updating
     _react.useEffect.call(void 0, () => {
       if (!isUpdating) {
         setLocalData(fieldData);
+        setLocalDataTemp(fieldData);
+        fixJsonDataField();
       }
     }, [fieldData, isUpdating]);
+
+    const handleUpdateTemp = (key, value) => {
+      const updated = { ...localDataTemp, [key]: value };
+      setLocalDataTemp(updated);
+      fixJsonDataField();
+    };
+    
+    const handleFixTemp = (key) => {
+      const updated = { ...localDataTemp, [key]: JSON.stringify(localData[key]) };
+      setLocalDataTemp(updated);
+      fixJsonDataField();
+    };
+
+    const handleUpdatePreview = (key, value) => {
+      const updated = { ...localData, [key]: value };
+      setLocalData(updated);
+    };
 
     const handleUpdate = (key, value) => {
       const updated = { ...localData, [key]: value };
       setLocalData(updated);
+      setLocalDataTemp(updated);
+      fixJsonDataField();
       setIsUpdating(true);
       
       // Use setTimeout to ensure the update happens after the current render cycle
@@ -1405,9 +1456,6 @@ Create an agent that performs the described task. Use meaningful variable names 
             onBlur: (e) => {
               const newValue = e.target.value;
               handleDirectUpdate(newValue);
-              setTimeout(() => {
-                handleFieldClick('template', currentAgent.template)
-              }, 0);
             },
             className: "w-full h-32 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"          ,
             placeholder: "Enter template with variables like [[VARIABLE_NAME]]"     ,}
@@ -1424,7 +1472,7 @@ Create an agent that performs the described task. Use meaningful variable names 
             , _react2.default.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-2"    ,}, "Output Type")
             , _react2.default.createElement(CustomDropdown, {
               value: localData.type || 'json',
-              onChange: (value) => handleUpdate('type', value),
+              onChange: (value) => handleUpdate("type", value),
               options: [
                 { value: 'json', label: 'JSON', icon: _lucidereact.Braces },
                 { value: 'raw', label: 'Raw', icon: _lucidereact.FileText },
@@ -1494,7 +1542,8 @@ Create an agent that performs the described task. Use meaningful variable names 
               value: localData.type || 'api',
               onChange: (value) => handleUpdate('type', value),
               options: [
-                { value: 'api', label: 'API', icon: _lucidereact.Zap }
+                { value: 'api', label: 'API', icon: _lucidereact.Zap },
+                { value: 'pollinations', label: 'Pollinations', icon: _lucidereact.Zap },
               ],}
             )
           )
@@ -1503,7 +1552,12 @@ Create an agent that performs the described task. Use meaningful variable names 
             , _react2.default.createElement('input', {
               type: "text",
               value: localData.url || '',
-              onChange: (e) => handleUpdate('url', e.target.value),
+              onChange: (e) => {
+                handleUpdatePreview('url', e.target.value);
+              },
+              onBlur: (e) => {
+                handleUpdate('url', e.target.value);
+              },
               className: "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"       ,
               placeholder: "https://api.example.com/endpoint",}
             )
@@ -1511,12 +1565,18 @@ Create an agent that performs the described task. Use meaningful variable names 
           , _react2.default.createElement('div', null
             , _react2.default.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-2"    ,}, "Headers (JSON)" )
             , _react2.default.createElement('textarea', {
-              value: JSON.stringify(localData.headers || {}, null, 2),
+              value: localDataTemp.headers || "",
               onChange: (e) => {
+                  handleUpdateTemp('headers', e.target.value);
+              },
+              onBlur: (e) => {
                 try {
-                  handleUpdate('headers', JSON.parse(e.target.value));
+                  const newValue = JSON.parse(e.target.value);
+                  handleUpdate('headers', newValue);
                 } catch (err) {
                   // Invalid JSON, don't update
+                  alert("Invalid JSON format for headers. Revert to last valid value.");
+                  handleFixTemp('headers');
                 }
               },
               className: "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 font-mono text-sm"          ,
@@ -1526,12 +1586,18 @@ Create an agent that performs the described task. Use meaningful variable names 
           , _react2.default.createElement('div', null
             , _react2.default.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-2"    ,}, "Data (JSON)" )
             , _react2.default.createElement('textarea', {
-              value: JSON.stringify(localData.data || {}, null, 2),
+              value: localDataTemp.data || "",
               onChange: (e) => {
+                  handleUpdateTemp('data', e.target.value);
+              },
+              onBlur: (e) => {
                 try {
-                  handleUpdate('data', JSON.parse(e.target.value));
+                  const newValue = JSON.parse(e.target.value);
+                  handleUpdate('data', newValue);
                 } catch (err) {
                   // Invalid JSON, don't update
+                  alert("Invalid JSON format for data. Revert to last valid value.");
+                  handleFixTemp('data');
                 }
               },
               className: "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-20 font-mono text-sm"          ,
@@ -1573,7 +1639,12 @@ Create an agent that performs the described task. Use meaningful variable names 
               , _react2.default.createElement('input', {
                 type: "text",
                 value: localData.default || '',
-                onChange: (e) => handleUpdate('default', e.target.value),
+                onChange: (e) => {
+                    handleUpdatePreview('default', e.target.value);
+                },
+                onBlur: (e) => {
+                    handleUpdate('default', e.target.value);
+                },
                 className: "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"       ,
                 placeholder: "Enter default value"  ,}
               )
@@ -1640,12 +1711,18 @@ Create an agent that performs the described task. Use meaningful variable names 
               , _react2.default.createElement('div', null
                 , _react2.default.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-2"    ,}, "Plan (JSON)" )
                 , _react2.default.createElement('textarea', {
-                  value: JSON.stringify(localData.plan || {}, null, 2),
+                  value: localDataTemp.plan || "",
                   onChange: (e) => {
+                      handleUpdateTemp('plan', e.target.value);
+                  },
+                  onBlur: (e) => {
                     try {
-                      handleUpdate('plan', JSON.parse(e.target.value));
+                      const newValue = JSON.parse(e.target.value);
+                      handleUpdate('plan', newValue);
                     } catch (err) {
                       // Invalid JSON, don't update
+                      alert("Invalid JSON format for plan. Revert to last valid value.");
+                      handleFixTemp('plan');
                     }
                   },
                   className: "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 font-mono text-sm"          ,
@@ -2133,7 +2210,7 @@ Create an agent that performs the described task. Use meaningful variable names 
                   )
                   , _react2.default.createElement('div', { className: "space-y-2",}
                     , _react2.default.createElement('div', { className: "flex items-center space-x-2"  ,}
-                      , _react2.default.createElement('span', { className: "text-sm font-medium text-gray-500"  ,}, "Type:")
+                      , _react2.default.createElement('span', { className: "text-sm font-medium text-gray-500"  ,}, "Output Type:")
                       , _react2.default.createElement('span', { className: "text-sm text-gray-900" ,}, _optionalChain([currentAgent, 'access', _11 => _11.executor, 'optionalAccess', _12 => _12.type]) || 'Not configured')
                     )
                     , _react2.default.createElement('div', { className: "flex items-center space-x-2"  ,}
