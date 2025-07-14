@@ -6,6 +6,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from agent import PandexHub, PandexAgent
 
+base_url = "http://localhost:3333"
 app = Flask(__name__)
 CORS(app)
 
@@ -15,12 +16,12 @@ current_hub = None
 @app.route('/')
 def index():
     """Serve the playground frontend"""
-    return render_template('playground.html')
+    return render_template('playground.html', base_url=base_url)
 
 @app.route('/playground')
 def playground():
     """Serve the playground frontend"""
-    return render_template('playground.html')
+    return render_template('playground.html', base_url=base_url)
 
 @app.route('/api/hub', methods=['POST'])
 def create_or_update_hub():
@@ -240,4 +241,6 @@ def list_agents():
     })
 
 if __name__ == '__main__':
+    if len(sys.argv) > 1 : 
+        base_url = sys.argv[2] 
     app.run(debug=True, host='0.0.0.0')
