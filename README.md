@@ -27,6 +27,8 @@ We provide a web-based playground at:
 
 👉 [Pandex Agent Playground](https://pandex-agent.vercel.app/)
 
+![Pandex Agent Playground](https://s2.loli.net/2025/07/14/anY8QdHo9b1Rjrh.png)
+
 This is a lightweight, interactive demo designed to preview how PandexAgent works. It allows you to experiment with prompt composition, nested variables, and structured outputs without setting up a local environment.
 
 ⚠️ Note: This playground is not optimized for production use. Responses may be delayed due to limited backend resources.
