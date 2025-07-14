@@ -1,5 +1,6 @@
 .vercel
 _*
+._*
 __pycache__/*
 .venv/*
 .fslckout
